@@ -10,8 +10,8 @@ public class ExtendibleHashFile {
     // ========================================================================
     //  Параметры (можно менять)
     // ========================================================================
-    private static final int PAGE_SIZE = 4096;                // размер страницы
-    private static final int MAX_ENTRIES_PER_BUCKET = 100;    // макс. записей в бакете
+    private static final int PAGE_SIZE = 50;                // размер страницы
+    private static final int MAX_ENTRIES_PER_BUCKET = 2;    // макс. записей в бакете
     private static final int HEADER_PAGE_ID = 0;
     private static final String DB_FILE = "extendible_hash.db";
 
@@ -218,14 +218,12 @@ public class ExtendibleHashFile {
 
             redistributeEntries(bucket, newBucket);
 
-            // обновляем directory — все указатели с префиксом, где следующий бит = 1
-            int step = 1 << (header.globalDepth - oldLocalDepth - 1);
-            for (int i = directoryIndex; i < (1 << header.globalDepth); i += (step << 1)) {
-                for (int j = 0; j < step; j++) {
-                    if ((i + j) < directory.length && directory[i + j] == bucket.pageId) {
-                        if ((i + j) % (step << 1) >= step) {
-                            directory[i + j] = newBucket.pageId;
-                        }
+            int mask = 1 << oldLocalDepth;  // бит, по которому расщепляем
+            for (int i = 0; i < directory.length; i++) {
+                if (directory[i] == bucket.pageId) {
+                    // Смотрим на бит oldLocalDepth в индексе i
+                    if ((i & mask) != 0) {  // бит = 1 → новая страница
+                        directory[i] = newBucket.pageId;
                     }
                 }
             }
@@ -300,12 +298,15 @@ public class ExtendibleHashFile {
         ExtendibleHashFile db = new ExtendibleHashFile();
 
         db.put("apple", "fruit");
-        db.put("car", "vehicle");
+
         db.put("dog", "animal");
         db.put("cat", "pet");
 
-        System.out.println(db.get("apple"));  // fruit
-        System.out.println(db.get("dog"));    // animal
+        System.out.println(db.get("apple"));
+        System.out.println(db.get("dog"));
+        db.put("car", "vehicle");
+        System.out.println(db.get("cat"));
+        System.out.println(db.get("car"));
 
         db.close();
     }
