@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 @BenchmarkMode({Mode.AverageTime, Mode.Throughput})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-@Warmup(iterations = 0, time = 0)
+@Warmup(iterations = 3)
 @Measurement(iterations = 5, time = 4)
 @Fork(value = 1, jvmArgs = {"-Xms2g", "-Xmx4g"})
 public class QuadTreePerfTest {
