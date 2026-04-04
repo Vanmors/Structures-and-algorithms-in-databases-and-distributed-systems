@@ -1,18 +1,21 @@
 package com.vanmors.extendible;
 
+import com.google.common.hash.Hashing;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
 public class ExtendibleHashFile implements AutoCloseable {
 
-    private static final int PAGE_SIZE = 1024;                // размер страницы
+    private static final int PAGE_SIZE = 4096;                // размер страницы
 
-    private static final int MAX_ENTRIES_PER_BUCKET = 10;    // макс. записей в бакете
+    private static final int MAX_ENTRIES_PER_BUCKET = 32;
 
     private static final int HEADER_PAGE_ID = 0;
 
@@ -150,8 +153,7 @@ public class ExtendibleHashFile implements AutoCloseable {
         channel.read(buf, HEADER_PAGE_ID * PAGE_SIZE);
         buf.flip();
         header = new Header();
-        header.globalDepth = buf.getInt();
-        header.nextFreePageId = buf.getInt();
+        header.readFrom(buf);
         final int directorySize = buf.getInt();
         directory = new int[directorySize];
         for (int i = 0; i < directorySize; i++) {
@@ -198,9 +200,10 @@ public class ExtendibleHashFile implements AutoCloseable {
     }
 
     private int getBucketIndex(final String key) {
-        final int hash = key.hashCode();
+
+        final long hash = Hashing.murmur3_128().hashString(key, StandardCharsets.UTF_8).asLong();
         final int mask = (1 << header.globalDepth) - 1;
-        return hash & mask;   // младшие биты как индекс
+        return (int) hash & mask;   // младшие биты как индекс
     }
 
     public void put(final String key, final String value) throws IOException {
@@ -301,6 +304,10 @@ public class ExtendibleHashFile implements AutoCloseable {
             }
         }
         return null;
+    }
+
+    public void clearCache() {
+        pageCache.clear();
     }
 
     public void close() throws IOException {

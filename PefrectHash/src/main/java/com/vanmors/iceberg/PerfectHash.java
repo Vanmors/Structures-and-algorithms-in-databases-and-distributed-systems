@@ -1,7 +1,9 @@
 package com.vanmors.iceberg;
 
+import com.google.common.hash.Hashing;
 import org.instancio.Instancio;
 
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
@@ -103,29 +105,18 @@ public class PerfectHash {
     }
 
     private static int hash(final String s, final int seed) {
-        long h = 0x517cc1b727220a95L ^ seed;
-        for (int i = 0; i < s.length(); i++) {
-            h ^= s.charAt(i);
-            h *= 0x5bd1e995L;
-            h ^= h >>> 47;
-        }
-        return (int) h;
+        return Hashing.murmur3_128(seed)
+                .hashString(s, StandardCharsets.UTF_8)
+                .asInt();
     }
 
-    private static int displaceHash(final String s, final int globalSeed, final int displaceSeed, final int bucket) {
-        long h = hash(s, globalSeed);
-        h ^= displaceSeed;
-        h ^= bucket * 0x9E3779B97F4A7C15L;
-        h *= 0xBF58476D1CE4E5B9L;
-        h ^= h >>> 30;
-        h *= 0x94D049BB133111EBL;
-        h ^= h >>> 27;
-        return (int) h;
-//        h *= 0x85ebca6bL;
-//        h ^= h >>> 13;
-//        h *= 0xc2b2ae35L;
-//        h ^= h >>> 16;
-//        return (int) h;
+    private static int displaceHash(final String s, final int globalSeed,
+                                    final int displaceSeed, final int bucket) {
+        final int combinedSeed = globalSeed ^ (displaceSeed * 31) ^ bucket;
+
+        return Hashing.murmur3_128(combinedSeed)
+                .hashString(s, StandardCharsets.UTF_8)
+                .asInt();
     }
 
     public static void main(final String[] args) {

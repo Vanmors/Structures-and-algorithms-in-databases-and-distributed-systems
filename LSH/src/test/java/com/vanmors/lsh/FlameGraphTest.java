@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Set;
 
 
-public class FlameGraph {
+public class FlameGraphTest {
     public static void main(final String[] args) {
         final int documentCount = 10000;
         final LSH lsh = new LSH(120, 0.75);

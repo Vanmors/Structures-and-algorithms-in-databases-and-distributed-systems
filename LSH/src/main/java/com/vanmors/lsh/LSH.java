@@ -11,7 +11,7 @@ public class LSH {
 
     private final int numBands;         // b — количество полос
 
-    private final Map<String, List<String>> buckets;  // hash(band) → список docId
+    private final Map<String, List<String>> buckets;  // hash(band) список docId
 
     public LSH(final int numHashFunctions, final double threshold) {
         this.numHashFunctions = numHashFunctions;

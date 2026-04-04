@@ -24,7 +24,6 @@ public class ExtendibleHashFilePerfTest {
 
     private static final Path DB_PATH = Path.of("bench_extendable.db");
 
-//    @Param({"1000", "10000", "50000", "100000"})
     @Param({"1000", "10000", "50000"})
     private int size;
 
@@ -32,7 +31,7 @@ public class ExtendibleHashFilePerfTest {
     private List<String> keys;
     private List<String> values;
 
-    @Setup(Level.Trial)
+    @Setup(Level.Iteration)
     public void setup() throws IOException {
         Files.deleteIfExists(DB_PATH);
 
