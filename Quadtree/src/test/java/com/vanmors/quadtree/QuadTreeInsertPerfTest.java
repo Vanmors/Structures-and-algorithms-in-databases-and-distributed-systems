@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @Warmup(iterations = 3)
 @Measurement(iterations = 5)
-@Fork(value = 1, jvmArgs = {"-Xms2g", "-Xmx4g"})
+@Fork(value = 3, jvmArgs = {"-Xms2g", "-Xmx4g"})
 public class QuadTreeInsertPerfTest {
 
     @Param({"1000", "10000", "50000", "100000", "500000"})

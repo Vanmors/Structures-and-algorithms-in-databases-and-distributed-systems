@@ -2,6 +2,7 @@ package com.vanmors.quadtree;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 
 public class QuadTree {
@@ -129,4 +130,28 @@ public class QuadTree {
         final double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
         return R * c;
     }
+
+    private static List<Point> generateClusteredPoints(final int count) {
+        final Random rnd = new Random(42);
+        final List<Point> points = new ArrayList<>();
+
+        for (int i = 0; i < count; i++) {
+            final double lat = 55.7558 + (rnd.nextDouble() - 0.5) * 0.5;
+            final double lng = 37.6173 + (rnd.nextDouble() - 0.5) * 0.7;
+            points.add(new Point(lng, lat));
+        }
+        return points;
+    }
+
+    public static void main(final String[] args) {
+        final var points = generateClusteredPoints(100000);
+        final QuadTree quadTree = new QuadTree(new Rectangle(-180, -90, 360, 180), 8);
+        for (final Point p : points) {
+            quadTree.insert(p);
+        }
+        final Point queryPoint = points.get(points.size() / 2);
+        final List<Point> result = quadTree.queryRadius(queryPoint.lat, queryPoint.lng, 10.0);
+    }
+
+
 }

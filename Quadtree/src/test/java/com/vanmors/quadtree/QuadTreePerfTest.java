@@ -15,11 +15,10 @@ import java.util.concurrent.TimeUnit;
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
 @Warmup(iterations = 3)
 @Measurement(iterations = 5, time = 4)
-@Fork(value = 1, jvmArgs = {"-Xms2g", "-Xmx4g"})
+@Fork(value = 3, jvmArgs = {"-Xms2g", "-Xmx4g"})
 public class QuadTreePerfTest {
 
     @Param({"1000", "10000", "50000", "100000"})
-//    @Param({"100000"})
     private int size;
 
     private QuadTree quadTree;
@@ -56,7 +55,7 @@ public class QuadTreePerfTest {
     }
 
     @Benchmark
-    public List<Point> geohashQuery() {
+    public void geohashQuery(final Blackhole bh) {
         final String prefix = GeoHash.withCharacterPrecision(queryPoint.lat, queryPoint.lng, 7).toBase32();
         final String end = prefix + "~";
 
@@ -66,7 +65,7 @@ public class QuadTreePerfTest {
         for (final List<Point> list : range.values()) {
             result.addAll(list);
         }
-        return result;
+        bh.consume(result);
     }
 
     private List<Point> generateClusteredPoints(final int count) {
