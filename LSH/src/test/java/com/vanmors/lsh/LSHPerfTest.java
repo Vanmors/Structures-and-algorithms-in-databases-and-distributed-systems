@@ -56,7 +56,7 @@ public class LSHPerfTest {
     }
 
     @Benchmark
-    public void insertAll(final Blackhole bh) {
+    public void insert(final Blackhole bh) {
         // Тест вставки
         final LSH tempLsh = new LSH(120, 0.75);
 //        for (int i = 0; i < documentCount; i++) {

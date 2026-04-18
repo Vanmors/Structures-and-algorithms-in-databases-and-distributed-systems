@@ -33,36 +33,20 @@
 
 ### Результаты производительности
 
-| Документов | Операция    | Mode  | Score     | Error    | Units  |
-|------------|-------------|-------|-----------|----------|--------|
-| 1 000      | insertAll   | thrpt | ~1.0×10⁻⁴ | -        | ops/us |
-| 5 000      | insertAll   | thrpt | ~1.0×10⁻⁴ | -        | ops/us |
-| 10 000     | insertAll   | thrpt | ~1.0×10⁻⁵ | -        | ops/us |
-| 1 000      | queryRandom | thrpt | 0,227     | 0,012    | ops/us |
-| 5 000      | queryRandom | thrpt | 0,241     | 0,004    | ops/us |
-| 10 000     | queryRandom | thrpt | 0,239     | 0,005    | ops/us |
-| 1 000      | insertAll   | avgt  | 3 500,89  | 33,44    | us/op  |
-| 5 000      | insertAll   | avgt  | 17 761,89 | 151,90   | us/op  |
-| 10 000     | insertAll   | avgt  | 38 135,66 | 1 282,19 | us/op  |
-| 1 000      | queryRandom | avgt  | 4,352     | 0,295    | us/op  |
-| 5 000      | queryRandom | avgt  | 4,316     | 0,169    | us/op  |
-| 10 000     | queryRandom | avgt  | 4,132     | 0,064    | us/op  |
-
-
-
-Benchmark                (documentCount)   Mode  Cnt  Score   Error   Units
-LSHPerfTest.insertAll               1000  thrpt   30  0,160 ± 0,008  ops/us
-LSHPerfTest.insertAll               5000  thrpt   30  0,164 ± 0,002  ops/us
-LSHPerfTest.insertAll              10000  thrpt   30  0,164 ± 0,002  ops/us
-LSHPerfTest.queryRandom             1000  thrpt   30  0,228 ± 0,005  ops/us
-LSHPerfTest.queryRandom             5000  thrpt   30  0,230 ± 0,005  ops/us
-LSHPerfTest.queryRandom            10000  thrpt   30  0,230 ± 0,008  ops/us
-LSHPerfTest.insertAll               1000   avgt   30  6,177 ± 0,237   us/op
-LSHPerfTest.insertAll               5000   avgt   30  6,021 ± 0,088   us/op
-LSHPerfTest.insertAll              10000   avgt   30  6,011 ± 0,153   us/op
-LSHPerfTest.queryRandom             1000   avgt   30  4,366 ± 0,087   us/op
-LSHPerfTest.queryRandom             5000   avgt   30  4,234 ± 0,096   us/op
-LSHPerfTest.queryRandom            10000   avgt   30  4,659 ± 0,628   us/op
+| Документов | Операция    | Mode  | Score | Error | Units  |
+|------------|-------------|-------|-------|-------|--------|
+| 1 000      | insert      | thrpt | 0,160 | 0,008 | ops/us |
+| 5 000      | insert      | thrpt | 0,164 | 0,002 | ops/us |
+| 10 000     | insert      | thrpt | 0,164 | 0,002 | ops/us |
+| 1 000      | queryRandom | thrpt | 0,227 | 0,012 | ops/us |
+| 5 000      | queryRandom | thrpt | 0,241 | 0,004 | ops/us |
+| 10 000     | queryRandom | thrpt | 0,239 | 0,005 | ops/us |
+| 1 000      | insert      | avgt  | 6,177 | 0,237 | us/op  |
+| 5 000      | insert      | avgt  | 6,021 | 0,088 | us/op  |
+| 10 000     | insert      | avgt  | 6,011 | 0,153 | us/op  |
+| 1 000      | queryRandom | avgt  | 4,352 | 0,295 | us/op  |
+| 5 000      | queryRandom | avgt  | 4,316 | 0,169 | us/op  |
+| 10 000     | queryRandom | avgt  | 4,132 | 0,064 | us/op  |
 
 
 ### Графики
