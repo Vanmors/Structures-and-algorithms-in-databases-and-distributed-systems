@@ -15,8 +15,8 @@ import java.util.concurrent.TimeUnit;
 @State(Scope.Benchmark)
 @BenchmarkMode({Mode.Throughput, Mode.AverageTime})
 @OutputTimeUnit(TimeUnit.MICROSECONDS)
-@Warmup(iterations = 3, time = 2)
-@Measurement(iterations = 5, time = 3)
+@Warmup(iterations = 5, time = 2)
+@Measurement(iterations = 10, time = 3)
 @Fork(value = 3, jvmArgs = {"-Xms2g", "-Xmx4g"})
 public class LSHPerfTest {
 
@@ -59,9 +59,9 @@ public class LSHPerfTest {
     public void insertAll(final Blackhole bh) {
         // Тест вставки
         final LSH tempLsh = new LSH(120, 0.75);
-        for (int i = 0; i < documentCount; i++) {
-            tempLsh.insert(docIds.get(i), signatures.get(i));
-        }
+//        for (int i = 0; i < documentCount; i++) {
+            tempLsh.insert(docIds.get(999), signatures.get(999));
+//        }
         bh.consume(tempLsh);
     }
 

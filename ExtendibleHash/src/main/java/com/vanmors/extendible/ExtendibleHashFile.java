@@ -13,9 +13,9 @@ import java.util.*;
 
 public class ExtendibleHashFile implements AutoCloseable {
 
-    private static final int PAGE_SIZE = 4096;                // размер страницы
+    private static final int PAGE_SIZE = 16384;                // размер страницы
 
-    private static final int MAX_ENTRIES_PER_BUCKET = 32;
+    private static final int MAX_ENTRIES_PER_BUCKET = 128;
 
     private static final int HEADER_PAGE_ID = 0;
 
@@ -42,7 +42,7 @@ public class ExtendibleHashFile implements AutoCloseable {
 
         int localDepth;
 
-        int entryCount;
+        int entryCount = 0;
 
         List<Entry> entries = new ArrayList<>();
 
@@ -118,7 +118,9 @@ public class ExtendibleHashFile implements AutoCloseable {
 
     private int[] directory;
 
-    private final Map<Integer, BucketPage> pageCache = new HashMap<>();
+    private final Map<Integer, BucketPage> pageCache;
+
+    private static final int DEFAULT_CACHE_SIZE = 128;
 
     public ExtendibleHashFile() throws IOException {
         final File file = new File(DB_FILE);
@@ -126,6 +128,13 @@ public class ExtendibleHashFile implements AutoCloseable {
 
         raf = new RandomAccessFile(file, "rw");
         channel = raf.getChannel();
+
+        this.pageCache = new LinkedHashMap<>(DEFAULT_CACHE_SIZE, 0.75f, true) {
+            @Override
+            protected boolean removeEldestEntry(final Map.Entry<Integer, BucketPage> eldest) {
+                return size() > DEFAULT_CACHE_SIZE;
+            }
+        };
 
         if (newFile) {
             initializeNewFile();
@@ -199,12 +208,6 @@ public class ExtendibleHashFile implements AutoCloseable {
         return bp;
     }
 
-    private int getBucketIndex(final String key) {
-
-        final long hash = Hashing.murmur3_128().hashString(key, StandardCharsets.UTF_8).asLong();
-        final int mask = (1 << header.globalDepth) - 1;
-        return (int) hash & mask;   // младшие биты как индекс
-    }
 
     public void put(final String key, final String value) throws IOException {
         final int idx = getBucketIndex(key);
@@ -235,31 +238,42 @@ public class ExtendibleHashFile implements AutoCloseable {
     private void split(final BucketPage bucket) throws IOException {
         final int oldLocalDepth = bucket.localDepth;
 
-        if (oldLocalDepth < header.globalDepth) {
-            // простой split — только перераспределяем
-            final BucketPage newBucket = createNewBucket(oldLocalDepth + 1);
-
-            redistributeEntries(bucket, newBucket);
-
-            final int mask = 1 << oldLocalDepth;  // бит, по которому расщепляем
-            for (int i = 0; i < directory.length; i++) {
-                if (directory[i] == bucket.pageId) {
-                    // Смотрим на бит oldLocalDepth в индексе i
-                    if ((i & mask) != 0) {  // бит = 1 → новая страница
-                        directory[i] = newBucket.pageId;
-                    }
-                }
-            }
-
-            bucket.localDepth++;
-            writePage(bucket);
-            writePage(newBucket);
-        } else {
-            // удвоение directory
+        if (oldLocalDepth == header.globalDepth) {
             doubleDirectory();
-            // после удвоения индекс может измениться — пересчитываем
-            split(bucket);
         }
+
+        // увеличиваем depth
+        bucket.localDepth++;
+
+        // создаём новый bucket
+        final BucketPage newBucket = createNewBucket(bucket.localDepth);
+
+        // обновляем directory
+        final int mask = 1 << (bucket.localDepth - 1);
+
+        for (int i = 0; i < directory.length; i++) {
+            if (directory[i] == bucket.pageId && (i & mask) != 0) {
+                directory[i] = newBucket.pageId;
+            }
+        }
+
+        // redistribute
+        redistributeEntries(bucket, newBucket);
+
+        writePage(bucket);
+        writePage(newBucket);
+    }
+
+    private long hash(final String key) {
+        return Hashing.murmur3_128()
+                .hashString(key, StandardCharsets.UTF_8)
+                .asLong();
+    }
+
+    private int getBucketIndex(final String key) {
+        final long h = hash(key);
+        final int mask = (1 << header.globalDepth) - 1;
+        return (int) h & mask;
     }
 
     private void doubleDirectory() {
@@ -281,11 +295,15 @@ public class ExtendibleHashFile implements AutoCloseable {
     }
 
     private void redistributeEntries(final BucketPage oldBucket, final BucketPage newBucket) {
+        final int splitBit = oldBucket.localDepth - 1;
+
         final Iterator<Entry> it = oldBucket.entries.iterator();
         while (it.hasNext()) {
             final Entry e = it.next();
-            final int h = getBucketIndex(e.key);
-            if ((h >> oldBucket.localDepth) % 2 == 1) {
+
+            final long h = hash(e.key);
+
+            if ((h & (1L << splitBit)) != 0) {
                 newBucket.add(e);
                 it.remove();
                 oldBucket.entryCount--;
@@ -304,10 +322,6 @@ public class ExtendibleHashFile implements AutoCloseable {
             }
         }
         return null;
-    }
-
-    public void clearCache() {
-        pageCache.clear();
     }
 
     public void close() throws IOException {

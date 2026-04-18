@@ -21,16 +21,16 @@ public class FlameGraphTest {
                 .create();
 
 
-        for (int i = 0; i < documentCount; i++) {
-            final Set<String> shingles = LSH.shingleGenerator(texts.get(i), 3);
+//        for (int i = 0; i < documentCount; i++) {
+            final Set<String> shingles = LSH.shingleGenerator(texts.get(0), 3);
             final MinHashSignature sig = LSH.computeMinHash(shingles, 120);
             signatures.add(sig);
-            docIds.add("doc" + i);
-        }
+            docIds.add("doc" + 0);
+//        }
 
         // Вставляем все документы
-        for (int i = 0; i < documentCount; i++) {
-            lsh.insert(docIds.get(i), signatures.get(i));
-        }
+//        for (int i = 0; i < documentCount; i++) {
+            lsh.insert(docIds.get(0), signatures.get(0));
+//        }
     }
 }

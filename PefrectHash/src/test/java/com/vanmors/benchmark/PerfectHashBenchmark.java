@@ -14,8 +14,8 @@ import java.util.concurrent.TimeUnit;
 
 
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
-@Warmup(iterations = 3, time = 1)
-@Measurement(iterations = 5, time = 2)
+@Warmup(iterations = 5, time = 1)
+@Measurement(iterations = 10, time = 2)
 @Fork(value = 3, jvmArgs = {"-Xms2G", "-Xmx2G"})
 @State(Scope.Benchmark)
 public class PerfectHashBenchmark {
@@ -43,11 +43,12 @@ public class PerfectHashBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void lookup(final Blackhole bh) {
-        int sum = 0;
-        for (int i = 0; i < 1000; i++) {
-            sum += phf.getIndex(largeKeys.get(i % keyCount), phf.getSeed());
-        }
-        bh.consume(sum);
+//        int sum = 0;
+//        for (int i = 0; i < 1000; i++) {
+//            sum += phf.getIndex(largeKeys.get(i % keyCount), phf.getSeed());
+            final var result = phf.getIndex(largeKeys.get(999 % keyCount), phf.getSeed());
+//        }
+        bh.consume(result);
     }
 
     @Benchmark

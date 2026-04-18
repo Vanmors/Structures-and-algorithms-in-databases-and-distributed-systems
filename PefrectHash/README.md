@@ -14,24 +14,25 @@
 
 ### Результаты бенчмарков Perfect Hash
 
-| Операция              | Количество ключей | Mode          | Cnt | Score       | Error         | Units    |
-|-----------------------|-------------------|---------------|-----|-------------|---------------|----------|
-| `lookup`              | 100               | Throughput    | 15  | 11,412      | ± 0,976       | ops/ms   |
-| `lookup`              | 1 000             | Throughput    | 15  | 9,351       | ± 0,831       | ops/ms   |
-| `lookup`              | 5 000             | Throughput    | 15  | 10,381      | ± 0,178       | ops/ms   |
-| `lookup`              | 10 000            | Throughput    | 15  | 10,124      | ± 0,309       | ops/ms   |
-| `buildOnly`           | 100               | Single Shot   | 15  | 2,673       | ± 2,850       | ms/op    |
-| `buildOnly`           | 1 000             | Single Shot   | 15  | 32,544      | ± 38,971      | ms/op    |
-| `buildOnly`           | 5 000             | Single Shot   | 15  | 105,165     | ± 36,701      | ms/op    |
-| `buildOnly`           | 10 000            | Single Shot   | 15  | 445,016     | ± 216,380     | ms/op    |
+| Операция    | Количество ключей | Mode        | Score    | Error      | Units  |
+|-------------|-------------------|-------------|----------|------------|--------|
+| `lookup`    | 100               | Throughput  | 5370,827 | ± 196,232  | ops/ms |
+| `lookup`    | 1 000             | Throughput  | 7173,527 | ± 0,831    | ops/ms |
+| `lookup`    | 5 000             | Throughput  | 5464,564 | ± 318,902  | ops/ms |
+| `lookup`    | 10 000            | Throughput  | 8348,129 | ± 1373,110 | ops/ms |
+| `buildOnly` | 100               | Single Shot | 2,673    | ± 1,088    | ms/op  |
+| `buildOnly` | 1 000             | Single Shot | 32,544   | ± 16,407   | ms/op  |
+| `buildOnly` | 5 000             | Single Shot | 105,165  | ± 42,512   | ms/op  |
+| `buildOnly` | 10 000            | Single Shot | 445,016  | ± 176,195  | ms/op  |
+
 
 **Примечания:**
 - `lookup` — измеряет скорость поиска (`getIndex()`) в режиме пропускной способности.
 - `buildOnly` — измеряет время построения Perfect Hash (SingleShotTime).
 
 ### Графики
-Поиск 1000 ключей  
-![img_3.png](img_3.png)
+Поиск одного ключа  
+![img_2.png](img_2.png)
 Примерно одинаковое время с учётом ошибки
 
 Построение  

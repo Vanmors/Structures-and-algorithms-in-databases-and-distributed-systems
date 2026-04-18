@@ -49,13 +49,29 @@
 | 10 000     | queryRandom | avgt  | 4,132     | 0,064    | us/op  |
 
 
+
+Benchmark                (documentCount)   Mode  Cnt  Score   Error   Units
+LSHPerfTest.insertAll               1000  thrpt   30  0,160 ± 0,008  ops/us
+LSHPerfTest.insertAll               5000  thrpt   30  0,164 ± 0,002  ops/us
+LSHPerfTest.insertAll              10000  thrpt   30  0,164 ± 0,002  ops/us
+LSHPerfTest.queryRandom             1000  thrpt   30  0,228 ± 0,005  ops/us
+LSHPerfTest.queryRandom             5000  thrpt   30  0,230 ± 0,005  ops/us
+LSHPerfTest.queryRandom            10000  thrpt   30  0,230 ± 0,008  ops/us
+LSHPerfTest.insertAll               1000   avgt   30  6,177 ± 0,237   us/op
+LSHPerfTest.insertAll               5000   avgt   30  6,021 ± 0,088   us/op
+LSHPerfTest.insertAll              10000   avgt   30  6,011 ± 0,153   us/op
+LSHPerfTest.queryRandom             1000   avgt   30  4,366 ± 0,087   us/op
+LSHPerfTest.queryRandom             5000   avgt   30  4,234 ± 0,096   us/op
+LSHPerfTest.queryRandom            10000   avgt   30  4,659 ± 0,628   us/op
+
+
 ### Графики
 Вставка в LSH  
-![img_5.png](img_5.png)
+![img.png](img.png)
 Линейное увеличение времени в зависимости от количества документов.
 
-Поиск кандидатов  
-![img_6.png](img_6.png)
+Поиск кандидата
+![img_1.png](img_1.png)
 Примерно одинаковое время с учётом ошибки
 
 ### CPU
