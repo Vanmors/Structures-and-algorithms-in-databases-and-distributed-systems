@@ -1,6 +1,8 @@
 package com.vanmors.extendible;
 
 import com.google.common.hash.Hashing;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -9,17 +11,73 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 public class ExtendibleHashFile implements AutoCloseable {
 
-    private static final int PAGE_SIZE = 16384;                // размер страницы
+    private static final Logger log = LoggerFactory.getLogger(ExtendibleHashFile.class);
 
-    private static final int MAX_ENTRIES_PER_BUCKET = 128;
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     private static final int HEADER_PAGE_ID = 0;
 
-    private static final String DB_FILE = "extendible_hash.db";
+    // --- настраиваемые параметры ---
+    private final int pageSize;
+
+    private final int maxEntriesPerBucket;
+
+    private final int cacheSize;
+
+    private final String dbFile;
+
+    private final int initialGlobalDepth;
+
+    public static class Builder {
+        private int pageSize = 16384;
+
+        private int maxEntriesPerBucket = 128;
+
+        private int cacheSize = 128;
+
+        private String dbFile = "extendible_hash.db";
+
+        private int initialGlobalDepth = 1;
+
+        public Builder pageSize(final int pageSize) {
+            this.pageSize = pageSize;
+            return this;
+        }
+
+        public Builder maxEntriesPerBucket(final int maxEntriesPerBucket) {
+            this.maxEntriesPerBucket = maxEntriesPerBucket;
+            return this;
+        }
+
+        public Builder cacheSize(final int cacheSize) {
+            this.cacheSize = cacheSize;
+            return this;
+        }
+
+        public Builder dbFile(final String dbFile) {
+            this.dbFile = dbFile;
+            return this;
+        }
+
+        public Builder initialGlobalDepth(final int initialGlobalDepth) {
+            this.initialGlobalDepth = initialGlobalDepth;
+            return this;
+        }
+
+        public ExtendibleHashFile build() throws IOException {
+            return new ExtendibleHashFile(this);
+        }
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
 
     static class Header {
         int globalDepth = 1;
@@ -51,8 +109,8 @@ public class ExtendibleHashFile implements AutoCloseable {
             this.localDepth = localDepth;
         }
 
-        boolean hasSpace() {
-            return entryCount < MAX_ENTRIES_PER_BUCKET;
+        boolean hasSpace(final int maxEntriesPerBucket) {
+            return entryCount < maxEntriesPerBucket;
         }
 
         void add(final Entry e) {
@@ -60,14 +118,20 @@ public class ExtendibleHashFile implements AutoCloseable {
             entryCount++;
         }
 
-        ByteBuffer serialize() {
-            final ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
+        ByteBuffer serialize(final int pageSize) {
+            final ByteBuffer buf = ByteBuffer.allocate(pageSize);
             buf.putInt(localDepth);
             buf.putInt(entryCount);
 
             for (final Entry e : entries) {
                 final byte[] kBytes = e.key.getBytes();
                 final byte[] vBytes = e.value.getBytes();
+                final int needed = Integer.BYTES * 2 + kBytes.length + vBytes.length;
+                if (buf.remaining() < needed) {
+                    throw new IllegalStateException(
+                            "Страница переполнена: pageSize=%d, remaining=%d, needed=%d, key=%s"
+                                    .formatted(pageSize, buf.remaining(), needed, e.key));
+                }
                 buf.putInt(kBytes.length);
                 buf.put(kBytes);
                 buf.putInt(vBytes.length);
@@ -120,32 +184,46 @@ public class ExtendibleHashFile implements AutoCloseable {
 
     private final Map<Integer, BucketPage> pageCache;
 
-    private static final int DEFAULT_CACHE_SIZE = 128;
-
+    /**
+     * Конструктор с параметрами по умолчанию.
+     */
     public ExtendibleHashFile() throws IOException {
-        final File file = new File(DB_FILE);
+        this(new Builder());
+    }
+
+    private ExtendibleHashFile(final Builder b) throws IOException {
+        this.pageSize = b.pageSize;
+        this.maxEntriesPerBucket = b.maxEntriesPerBucket;
+        this.cacheSize = b.cacheSize;
+        this.dbFile = b.dbFile;
+        this.initialGlobalDepth = b.initialGlobalDepth;
+
+        final File file = new File(dbFile);
         final boolean newFile = !file.exists();
 
         raf = new RandomAccessFile(file, "rw");
         channel = raf.getChannel();
 
-        this.pageCache = new LinkedHashMap<>(DEFAULT_CACHE_SIZE, 0.75f, true) {
+        this.pageCache = new LinkedHashMap<>(cacheSize, 0.75f, true) {
             @Override
             protected boolean removeEldestEntry(final Map.Entry<Integer, BucketPage> eldest) {
-                return size() > DEFAULT_CACHE_SIZE;
+                return size() > cacheSize;
             }
         };
 
-        if (newFile) {
-            initializeNewFile();
-        } else {
-            loadHeader();
+        try (final var fileLock = channel.lock()) {
+            final boolean empty = channel.size() == 0;
+            if (empty) {
+                initializeNewFile();
+            } else {
+                loadHeader();
+            }
         }
     }
 
     private void initializeNewFile() throws IOException {
         header = new Header();
-        header.globalDepth = 1;
+        header.globalDepth = initialGlobalDepth;
         header.nextFreePageId = 2;
 
         directory = new int[1 << header.globalDepth];
@@ -158,8 +236,8 @@ public class ExtendibleHashFile implements AutoCloseable {
     }
 
     private void loadHeader() throws IOException {
-        final ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
-        channel.read(buf, HEADER_PAGE_ID * PAGE_SIZE);
+        final ByteBuffer buf = ByteBuffer.allocate(pageSize);
+        channel.read(buf, HEADER_PAGE_ID * pageSize);
         buf.flip();
         header = new Header();
         header.readFrom(buf);
@@ -182,12 +260,12 @@ public class ExtendibleHashFile implements AutoCloseable {
         }
 
         buf.flip();
-        channel.write(buf, HEADER_PAGE_ID * PAGE_SIZE);
+        channel.write(buf, HEADER_PAGE_ID * pageSize);
     }
 
     private void writePage(final BucketPage bp) throws IOException {
-        final ByteBuffer buf = bp.serialize();
-        final long pos = (long) bp.pageId * PAGE_SIZE;
+        final ByteBuffer buf = bp.serialize(pageSize);
+        final long pos = (long) bp.pageId * pageSize;
         channel.write(buf, pos);
         pageCache.put(bp.pageId, bp);
     }
@@ -198,8 +276,8 @@ public class ExtendibleHashFile implements AutoCloseable {
             return cached;
         }
 
-        final ByteBuffer buf = ByteBuffer.allocate(PAGE_SIZE);
-        final long pos = (long) pageId * PAGE_SIZE;
+        final ByteBuffer buf = ByteBuffer.allocate(pageSize);
+        final long pos = (long) pageId * pageSize;
         channel.read(buf, pos);
         buf.flip();
 
@@ -214,7 +292,7 @@ public class ExtendibleHashFile implements AutoCloseable {
         final int bucketId = directory[idx];
         final BucketPage bucket = readPage(bucketId);
 
-        if (bucket.hasSpace()) {
+        if (bucket.hasSpace(maxEntriesPerBucket)) {
             bucket.entries.removeIf(e -> e.key.equals(key));
             bucket.add(new Entry(key, value));
             writePage(bucket);
@@ -325,7 +403,12 @@ public class ExtendibleHashFile implements AutoCloseable {
     }
 
     public void close() throws IOException {
-        writeHeaderAndDirectory();
-        raf.close();
+        lock.writeLock().lock();
+        try {
+            writeHeaderAndDirectory();
+            raf.close();
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 }

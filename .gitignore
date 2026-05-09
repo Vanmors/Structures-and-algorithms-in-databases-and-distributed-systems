@@ -3,3 +3,6 @@ target/
 *.db
 async-profiler
 .profileconfig.json
+data
+venv
+.venv

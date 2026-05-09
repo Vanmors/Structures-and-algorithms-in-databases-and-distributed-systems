@@ -1,6 +1,6 @@
 package com.vanmors.benchmark;
 
-import com.vanmors.iceberg.PerfectHash;
+import com.vanmors.perfecthash.PerfectHash;
 import org.instancio.Instancio;
 import org.instancio.Select;
 import org.junit.jupiter.api.*;

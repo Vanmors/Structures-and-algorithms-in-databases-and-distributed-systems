@@ -1,16 +1,23 @@
-package com.vanmors.iceberg;
+package com.vanmors.perfecthash;
 
 import com.google.common.hash.Hashing;
 import org.instancio.Instancio;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 
 public class PerfectHash {
-    private static final int MAX_TRIES_BUCKET = 100000;
 
-    private static final int MAX_TRIES_SEED = 100000;
+    private static final Logger log = LoggerFactory.getLogger(PerfectHash.class);
+
+    // --- настраиваемые параметры ---
+    private final int maxTriesBucket;
+    private final int maxTriesSeed;
+    private final int bucketCountMultiplier;
+    private final long randomSeed;
 
     private final int[] seeds;          // seed для каждой корзины
 
@@ -20,20 +27,72 @@ public class PerfectHash {
 
     private int seed;
 
+    public static class Builder {
+        private int maxTriesBucket = 100_000;
+        private int maxTriesSeed = 100_000;
+        private int bucketCountMultiplier = 1000;
+        private long randomSeed = 42;
+        private final List<String> keys;
+
+        public Builder(final List<String> keys) {
+            this.keys = keys;
+        }
+
+        public Builder maxTriesBucket(final int maxTriesBucket) {
+            this.maxTriesBucket = maxTriesBucket;
+            return this;
+        }
+
+        public Builder maxTriesSeed(final int maxTriesSeed) {
+            this.maxTriesSeed = maxTriesSeed;
+            return this;
+        }
+
+        public Builder bucketCountMultiplier(final int bucketCountMultiplier) {
+            this.bucketCountMultiplier = bucketCountMultiplier;
+            return this;
+        }
+
+        public Builder randomSeed(final long randomSeed) {
+            this.randomSeed = randomSeed;
+            return this;
+        }
+
+        public PerfectHash build() {
+            return new PerfectHash(this);
+        }
+    }
+
+    public static Builder builder(final List<String> keys) {
+        return new Builder(keys);
+    }
+
     public int getSeed() {
         return seed;
     }
 
+    /**
+     * Конструктор с параметрами по умолчанию (обратная совместимость).
+     */
     public PerfectHash(final List<String> keys) {
-        this.keyCount = keys.size();
-        this.bucketCount = (int) Math.ceil(keyCount * 1000);
+        this(new Builder(keys));
+    }
+
+    private PerfectHash(final Builder b) {
+        this.maxTriesBucket = b.maxTriesBucket;
+        this.maxTriesSeed = b.maxTriesSeed;
+        this.bucketCountMultiplier = b.bucketCountMultiplier;
+        this.randomSeed = b.randomSeed;
+
+        this.keyCount = b.keys.size();
+        this.bucketCount = (int) Math.ceil(keyCount * bucketCountMultiplier);
 
         seeds = new int[bucketCount];
-        build(keys);
+        build(b.keys);
     }
 
     private void build(final List<String> keys) {
-        final Random rnd = new Random(42);
+        final Random rnd = new Random(randomSeed);
 
         // Группируем ключи по первому хешу (bucket)
         final List<String>[] buckets = new List[bucketCount];
@@ -42,7 +101,7 @@ public class PerfectHash {
         }
 
         outer:
-        for (int attempt = 0; attempt < MAX_TRIES_SEED; attempt++) {
+        for (int attempt = 0; attempt < maxTriesSeed; attempt++) {
             final int globalSeed = rnd.nextInt();
 
             // чистим корзины
@@ -65,7 +124,7 @@ public class PerfectHash {
                 }
 
                 boolean placed = false;
-                for (int s = 1; s < MAX_TRIES_BUCKET; s++) {
+                for (int s = 1; s < maxTriesBucket; s++) {
                     boolean ok = true;
 
                     for (final String k : bucketKeys) {
@@ -87,12 +146,12 @@ public class PerfectHash {
                 }
             }
 
-            System.out.println("Успешно построено за " + attempt + " попыток глобального сида");
+            log.info("Успешно построено за {} попыток глобального сида", attempt);
             this.seed = globalSeed;
             return;
         }
 
-        throw new IllegalStateException("Не удалось построить perfect hash после " + MAX_TRIES_SEED + " попыток");
+        throw new IllegalStateException("Не удалось построить perfect hash после " + maxTriesSeed + " попыток");
     }
 
     public int getIndex(final String key, final int seed) {
