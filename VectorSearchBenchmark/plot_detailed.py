@@ -1,5 +1,5 @@
 """
-Генерация детальных графиков для README:
+Генерация детальных графиков:
   1. LSH: влияние nbits
   2. HNSW: влияние efSearch при фиксированных M и efConstruction
   3. HNSW: влияние M при фиксированных efConstruction и efSearch
@@ -27,7 +27,7 @@ ivfpq = [d for d in data if d["algorithm"] == "IVF+PQ"]
 plt.rcParams.update({"figure.figsize": (10, 5), "font.size": 12})
 
 
-# ── 1. LSH: влияние nbits ─────────────────────────────────────────
+# 1. LSH: влияние nbits
 fig, axes = plt.subplots(1, 3, figsize=(15, 4.5))
 nbits = [d["params"]["nbits"] for d in lsh]
 recall = [d["recall"] for d in lsh]
@@ -59,7 +59,7 @@ plt.close(fig)
 print("lsh_nbits.png saved")
 
 
-# ── 2. HNSW: влияние efSearch (фикс M=32, efConstruction=200) ────
+# 2. HNSW: влияние efSearch (фикс M=32, efConstruction=200)
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 subset = [d for d in hnsw if d["params"]["M"] == 32 and d["params"]["efConstruction"] == 200]
 efS = [d["params"]["efSearch"] for d in subset]
@@ -85,7 +85,7 @@ plt.close(fig)
 print("hnsw_efsearch.png saved")
 
 
-# ── 3. HNSW: влияние M (фикс efConstruction=200, efSearch=64) ────
+# 3. HNSW: влияние M (фикс efConstruction=200, efSearch=64)
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 subset = [d for d in hnsw if d["params"]["efConstruction"] == 200 and d["params"]["efSearch"] == 64]
 M_vals = [d["params"]["M"] for d in subset]
@@ -111,7 +111,7 @@ plt.close(fig)
 print("hnsw_m.png saved")
 
 
-# ── 4. HNSW: влияние efConstruction (фикс M=32, efSearch=128) ────
+# 4. HNSW: влияние efConstruction (фикс M=32, efSearch=128)
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 subset = [d for d in hnsw if d["params"]["M"] == 32 and d["params"]["efSearch"] == 128]
 efC_vals = [d["params"]["efConstruction"] for d in subset]
@@ -137,7 +137,7 @@ plt.close(fig)
 print("hnsw_efconstruction.png saved")
 
 
-# ── 5. IVF+PQ: влияние nprobe (фикс nlist=1024, m_pq=32) ────────
+# 5. IVF+PQ: влияние nprobe (фикс nlist=1024, m_pq=32)
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 subset = [d for d in ivfpq if d["params"]["nlist"] == 1024 and d["params"]["m_pq"] == 32]
 nprobe_vals = [d["params"]["nprobe"] for d in subset]
@@ -163,7 +163,7 @@ plt.close(fig)
 print("ivfpq_nprobe.png saved")
 
 
-# ── 6. IVF+PQ: влияние m_pq (фикс nlist=256, nprobe=10) ─────────
+# 6. IVF+PQ: влияние m_pq (фикс nlist=256, nprobe=10)
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 5))
 subset = [d for d in ivfpq if d["params"]["nlist"] == 256 and d["params"]["nprobe"] == 10]
 mpq_vals = [d["params"]["m_pq"] for d in subset]
@@ -189,7 +189,7 @@ plt.close(fig)
 print("ivfpq_mpq.png saved")
 
 
-# ── 7. Общее сравнение: Recall vs QPS (Pareto-стиль) ─────────────
+# 7. Общее сравнение: Recall vs QPS (Pareto-стиль)
 fig, ax = plt.subplots(figsize=(12, 7))
 
 for algo, marker, color, label in [

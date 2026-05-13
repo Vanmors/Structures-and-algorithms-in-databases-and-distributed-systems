@@ -14,6 +14,7 @@
         <module>LSH</module>
         <module>PefrectHash</module>
         <module>Quadtree</module>
+        <module>ConcurrentHashMap</module>
     </modules>
 
     <properties>

@@ -3,8 +3,8 @@
 # Для каждой конфигурации измеряем:
 #   - recall@100: доля правильных соседей (пересечение с ground truth / 100)
 #   - время индексации (сек)
-#   - размер индекса (MB) — через faiss.write_index во временный файл
-#   - скорость поиска (QPS — queries per second)
+#   - размер индекса (MB) - через faiss.write_index во временный файл
+#   - скорость поиска (QPS - queries per second)
 
 import json
 import os
@@ -103,7 +103,7 @@ def benchmark_hnsw(base: np.ndarray, query: np.ndarray,
             index = faiss.IndexHNSWFlat(dim, M)
             index.hnsw.efConstruction = efC
 
-            # Построение графа — один раз для пары (M, efConstruction)
+            # Построение графа - один раз для пары (M, efConstruction)
             t0 = time.perf_counter()
             index.add(base)
             index_time = time.perf_counter() - t0
@@ -126,7 +126,7 @@ def benchmark_ivfpq(base: np.ndarray, query: np.ndarray,
     """IVF+PQ — faiss.IndexIVFPQ с перебором nlist, m_pq, nprobe."""
     dim = base.shape[1]
     nlist_list = [100, 256, 512, 1024]
-    m_pq_list = [8, 16, 32]  # dim=128 делится на все эти значения
+    m_pq_list = [8, 16, 32]
     nprobe_list = [1, 5, 10, 20, 50, 100]
 
     print("\n=== IVF+PQ ===")
@@ -135,7 +135,7 @@ def benchmark_ivfpq(base: np.ndarray, query: np.ndarray,
             quantizer = faiss.IndexFlatL2(dim)
             index = faiss.IndexIVFPQ(quantizer, dim, nlist, m_pq, 8)
 
-            # Обучение + добавление — один раз для пары (nlist, m_pq)
+            # Обучение + добавление - один раз для пары (nlist, m_pq)
             t0 = time.perf_counter()
             index.train(base)
             index.add(base)
