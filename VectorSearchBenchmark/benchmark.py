@@ -126,8 +126,8 @@ def benchmark_ivfpq(base: np.ndarray, query: np.ndarray,
     """IVF+PQ — faiss.IndexIVFPQ с перебором nlist, m_pq, nprobe."""
     dim = base.shape[1]
     nlist_list = [100, 256, 512, 1024]
-    m_pq_list = [8, 16, 32]
-    nprobe_list = [1, 5, 10, 20, 50, 100]
+    m_pq_list = [8, 16, 32, 64]
+    nprobe_list = [1, 5, 10, 20, 50, 100, 200]
 
     print("\n=== IVF+PQ ===")
     for nlist in nlist_list:
@@ -145,11 +145,49 @@ def benchmark_ivfpq(base: np.ndarray, query: np.ndarray,
 
             # Перебор nprobe без переиндексации
             for nprobe in nprobe_list:
+                if nprobe > nlist:
+                    continue
                 index.nprobe = nprobe
                 _, I, qps = search_with_timing(index, query, K)
                 recall = compute_recall(I, gt)
 
                 log_result(results, "IVF+PQ",
+                           {"nlist": nlist, "m_pq": m_pq, "nprobe": nprobe},
+                           recall, index_time, qps, size_mb)
+
+
+def benchmark_opq_ivfpq(base: np.ndarray, query: np.ndarray,
+                        gt: np.ndarray, results: list):
+    """OPQ+IVF+PQ — OPQ предвращение + IVF+PQ для лучшего recall."""
+    dim = base.shape[1]
+    nlist_list = [256, 1024]
+    m_pq_list = [32, 64]
+    nprobe_list = [10, 20, 50, 100, 200]
+
+    print("\n=== OPQ+IVF+PQ ===")
+    for nlist in nlist_list:
+        for m_pq in m_pq_list:
+            # OPQ вращает пространство для минимизации ошибки квантизации
+            opq = faiss.OPQMatrix(dim, m_pq)
+            quantizer = faiss.IndexFlatL2(dim)
+            sub_index = faiss.IndexIVFPQ(quantizer, dim, nlist, m_pq, 8)
+            index = faiss.IndexPreTransform(opq, sub_index)
+
+            t0 = time.perf_counter()
+            index.train(base)
+            index.add(base)
+            index_time = time.perf_counter() - t0
+
+            size_mb = measure_index_size(index)
+
+            for nprobe in nprobe_list:
+                if nprobe > nlist:
+                    continue
+                sub_index.nprobe = nprobe
+                _, I, qps = search_with_timing(index, query, K)
+                recall = compute_recall(I, gt)
+
+                log_result(results, "OPQ+IVF+PQ",
                            {"nlist": nlist, "m_pq": m_pq, "nprobe": nprobe},
                            recall, index_time, qps, size_mb)
 
@@ -172,6 +210,7 @@ def main():
     benchmark_lsh(base, query, gt, results)
     benchmark_hnsw(base, query, gt, results)
     benchmark_ivfpq(base, query, gt, results)
+    # benchmark_opq_ivfpq(base, query, gt, results)
 
     # Сохранение результатов
     os.makedirs(RESULTS_DIR, exist_ok=True)
